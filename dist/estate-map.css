@@ -1,0 +1,164 @@
+/* Judge Dean LLC */
+.meters {position:relative}
+#mapBtn {
+  position:absolute; inset:calc(100% + 8px) 0 auto auto; pointer-events:auto; padding:0;
+  width:clamp(152px,16vw,198px); background:#222e27; color:#f8f0d8; text-align:left;
+  border:1px solid #a3af968c; box-shadow:0 2px 9px #10181052; border-radius:2px;
+}
+#mapBtn:hover {border-color:#f1cc9d}
+.estateMapTab {
+  display:flex; align-items:center; justify-content:space-between; gap:5px; height:22px; padding:0 7px;
+  border-bottom:1px solid #a0a98d45; background:#253027; text-transform:uppercase;
+  font:500 .60rem var(--mono); letter-spacing:.09em;
+}
+.estateMapTab kbd {font-size:.54rem;line-height:1.1;background:#344035;padding:1px 3px}
+.estateInsetSurface,.estateAtlasSurface {position:relative;display:block;overflow:hidden;isolation:isolate;background:#344238}
+.estateInsetSurface {aspect-ratio:1.72}
+.estateCanvas {width:100%;height:100%;display:block}
+.estateNorth {
+  position:absolute;left:6px;top:7px;display:grid;place-items:center;width:13px;height:12px;
+  color:#f6f1dd;background:#29342aeb;box-shadow:0 0 0 1px #dce1c64d;font:700 9px/1 var(--mono);
+  pointer-events:none;
+}
+.estateNorth::before {content:'';position:absolute;left:4px;top:-3px;border:2.5px solid transparent;border-bottom-color:#f6f1dd;border-top:0}
+.estatePlayer {
+  width:15px;height:15px;position:absolute;z-index:4;pointer-events:none;
+  transform:translate(-50%,-50%) rotate(var(--heading,0rad));filter:drop-shadow(0 0 2px #102221);
+}
+.estatePlayer svg {display:block;width:100%;height:100%;fill:#aff7f0;stroke:#193f41;stroke-width:1.8}
+.estatePin {
+  --pin:#ff9253;
+  display:block;position:absolute;z-index:3;width:17px;height:22px;padding:0;border:0;background:transparent;
+  border-radius:0;transform:translate(-50%,-100%);color:#30251a;
+}
+.estatePin > svg {display:block;width:100%;height:100%;fill:var(--pin);stroke:#422f21;stroke-width:1.15;filter:drop-shadow(0 1px 1px #152219)}
+.pinLetter {display:grid;place-items:center;position:absolute;top:0;left:0;width:100%;height:74%;font:700 10px/1 var(--mono)}
+.estateInsetSurface .pinActive .pinLetter::after {content:'';width:5px;height:5px;border-radius:50%;background:#443020}
+.pinActive::before {
+  content:'';display:block;position:absolute;left:50%;top:100%;width:9px;height:9px;
+  border:1.4px solid #ffae74;border-radius:50%;transform:translate(-50%,-50%);
+  animation:estatePing 2.1s ease-out infinite;
+}
+@keyframes estatePing {
+  0% {opacity:1;transform:translate(-50%,-50%) scale(.45)}
+  75%,100% {opacity:0;transform:translate(-50%,-50%) scale(3.7)}
+}
+.pinOptional {--pin:#e9d589;z-index:2;width:15px;height:20px}
+@media(prefers-reduced-motion:reduce) {
+  .pinActive::before {animation:none;opacity:.8;transform:translate(-50%,-50%) scale(1.25)}
+}
+#panel.atlasPanel, #panel:has(.estateAtlas) {max-width:min(1000px,96vw)}
+.estateAtlas {display:grid;grid-template-columns:minmax(0,1.75fr) minmax(215px,.95fr);gap:21px}
+.atlasMapColumn,.atlasListColumn {min-width:0}
+.estateAtlasSurface {width:100%;aspect-ratio:1.58;border:1px solid #8a9982;border-radius:2px}
+.estateAtlasSurface .estateNorth {top:11px;left:9px}
+.estateAtlasSurface .estatePlayer {width:20px;height:20px}
+.estateAtlasSurface .estatePin {width:23px;height:29px}
+.estateAtlasSurface .estatePin .pinLetter {font-size:12px}
+.estateStation {
+  padding:0;position:absolute;z-index:1;display:grid;place-items:center;
+  width:20px;height:20px;transform:translate(-50%,-50%);border:1px solid #d9ddbe;
+  border-radius:50%;background:#354333;color:#f4f3df;font:700 10px/1 var(--mono);
+  box-shadow:0 1px 2px #10201a9a;
+}
+.estateStation:hover,.estateStation.isSelected {background:#e3e0bb;color:#283326}
+.estateStation:focus-visible,.estateAtlasSurface .estatePin:focus-visible {outline:2px solid white;outline-offset:2px;z-index:7}
+.estateKey {
+  display:flex;align-items:center;justify-content:flex-start;gap:7px 13px;flex-wrap:wrap;
+  padding:9px 0;color:#e0e6cc;font:.71rem/1.4 var(--mono);
+}
+.estateKey span {display:flex;align-items:center;gap:5px}
+.atlasSwatch {display:inline-block;width:9px;height:9px;border-radius:50%;background:#ff9253}
+.atlasSwatch.you {background:#aff7f0;width:11px;height:11px;border-radius:0;clip-path:polygon(50% 0,100% 100%,50% 73%,0 100%)}
+.atlasSwatch.bonus {background:#e9d589}
+.atlasSwatch.route {width:14px;height:0;border-top:2px dashed #f3eab0;border-radius:0;background:none}
+.atlasListColumn {display:flex;flex-direction:column;min-height:0}
+.atlasFilter {display:flex;align-items:center;justify-content:space-between;padding:0 0 7px;border-bottom:1px solid #83917a65;gap:8px;min-height:28px}
+.atlasFilter h3 {font:700 1.32rem/1.05 var(--cond);margin:0;color:#e6e9d6}
+.atlasReset {background:transparent;border:1px solid #8d998a80;padding:3px 7px;color:#f1eccc;font:normal .65rem var(--mono)}
+.atlasLedger {margin:0;padding:0;list-style:none;overflow:auto;scrollbar-width:thin;max-height:clamp(200px,38vh,385px)}
+.atlasJob {display:flex;gap:8px;align-items:center;padding:7px 4px;border-bottom:1px solid #7e8b722d}
+.atlasJob.current {background:#69543a54}
+.atlasLetter {display:grid;place-items:center;flex-shrink:0;height:20px;width:20px;color:#d4dcc1;border:1px solid #809174;border-radius:50%;font:.68rem/1 var(--mono)}
+.atlasJob.current .atlasLetter {background:#ff9253;border-color:#ff9253;color:#302a1f}
+.atlasJobCopy {display:flex;flex-direction:column;min-width:0;gap:3px}
+.atlasJobCopy strong {font:700 1rem/1.08 var(--cond)}
+.atlasJobCopy small,.atlasOrdinal {color:#bfc7b6;font:.64rem/1.28 var(--mono)}
+.atlasOrdinal {margin-left:auto;padding-left:4px}
+@media(max-width:760px){
+  #mapBtn {width:138px}
+  .estateAtlas {grid-template-columns:minmax(0,1.4fr) minmax(185px,1fr);gap:12px}
+}
+@media(max-width:600px){
+  #mapBtn {width:96px;inset-block-start:calc(100% + 5px)}
+  .estateMapTab {height:19px;padding:0 4px;font-size:.53rem;letter-spacing:.03em}
+  .estateInsetSurface {aspect-ratio:1.2}
+  .estateInsetSurface .estatePin {width:13px;height:16px}
+  .estateInsetSurface .pinOptional {width:12px;height:15px}
+  .estateInsetSurface .estatePlayer {width:12px;height:12px}
+  .estateInsetSurface .estateNorth {width:10px;height:10px;font-size:7px;left:4px;top:5px}
+  .estateAtlas {display:block}
+  .estateAtlasSurface {aspect-ratio:1.55}
+  .estateAtlasSurface .estateStation {width:18px;height:18px}
+  .estateKey {font-size:.65rem;gap:4px 10px}
+  .atlasListColumn {margin-top:4px}
+  .atlasLedger {max-height:210px}
+}
+@media (pointer:coarse){.estateMapTab kbd {display:none}}
+@media (max-height:540px) and (min-aspect-ratio:1/1){
+  #mapBtn {width:103px;inset-block-start:calc(100% + 3px)}
+  .estateMapTab {height:16px;font-size:.50rem}
+  .estateInsetSurface {aspect-ratio:1.85}
+  .estateInsetSurface .estatePin {width:13px;height:17px}
+  .estateInsetSurface .estatePlayer {width:12px;height:12px}
+  .estateAtlas {grid-template-columns:minmax(0,1.4fr) minmax(180px,1fr);display:grid}
+  .atlasLedger {max-height:170px}
+}
+@media (max-height:350px) and (min-aspect-ratio:1/1){
+  #view:has(#mapBtn:not([hidden])) .timer {padding-block:4px 2px}
+  #view:has(#mapBtn:not([hidden])) .timer strong {font-size:1.6rem}
+  #mapBtn {width:95px}
+  .estateMapTab {height:14px}
+  .estateInsetSurface {aspect-ratio:2}
+}
+.cartMapCaption {
+  display:flex; align-items:center; gap:5px; color:#e4d7f9; padding:2px 6px;
+  border-top:1px solid #9aa18b49; background:#253027; font:500 .61rem/1.25 var(--mono);
+}
+.cartMapCaption svg {width:17px; height:13px;}
+.estateCart {
+  position:absolute; z-index:2; display:grid; place-items:center; width:19px; height:15px;
+  pointer-events:none; color:#251e32; background:#e0c7f6; border:1px solid #3b3545; border-radius:3px;
+  transform:translate(-50%,-50%); box-shadow:0 0 0 1px #141b1373;
+}
+.estateCart svg {width:16px; height:13px;}
+.estateCart.atEdge::after {
+  content:''; position:absolute; top:50%; left:50%; margin:-3px 0 0 -3px;
+  width:0; height:0; border-block:3px solid transparent; border-left:5px solid #e9caff;
+  transform:rotate(var(--direction)) translateX(11px);
+}
+.estatePlayer .driveArrow {display:none;}
+.estatePlayer.isDriving {width:19px; height:22px; border-radius:3px; background:#23382d; box-shadow:0 0 0 1px #aee3d9;}
+.estatePlayer.isDriving .footArrow {display:none;}
+.estatePlayer.isDriving .driveArrow {
+  display:block; fill:none; color:#b7f4e6; stroke:#b7f4e6; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;
+}
+.atlasSwatch.driver,.atlasSwatch.cart {background:none; border-radius:0; display:grid; place-items:center;}
+.atlasSwatch.cart {width:19px; height:15px; border-radius:2px; color:#302b39; background:#e0c7f6;}
+.atlasSwatch.cart svg {width:17px; height:14px;}
+.atlasSwatch.driver,.atlasSwatch.driver svg {width:14px; height:17px; color:#b7f4e6;}
+.estatePullOff,.atlasSwatch.park {
+  display:grid; place-items:center; width:13px; height:13px;
+  font:700 9px/1 var(--mono); color:#d9f0e1; background:#32545a; border:1px solid #b9ded1; border-radius:2px;
+}
+.estatePullOff {position:absolute; z-index:2; transform:translate(-50%,-50%); pointer-events:none;}
+@media (max-width:600px), (max-height:540px) and (min-aspect-ratio:1/1) {
+  .cartMapCaption {gap:3px; padding:1px 3px; font-size:.54rem;}
+  .cartMapCaption svg {width:14px; height:12px;}
+  .estateInsetSurface .estateCart {width:14px; height:12px;}
+  .estateInsetSurface .estateCart svg {width:12px; height:10px;}
+  .estateInsetSurface .estatePlayer.isDriving {width:14px; height:17px;}
+}
+@media (max-height:350px) and (min-aspect-ratio:1/1) {
+  .cartMapCaption {display:none;}
+}

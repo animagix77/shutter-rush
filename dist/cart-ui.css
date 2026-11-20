@@ -1,0 +1,61 @@
+/* Judge Dean LLC */
+#cartHud {
+  display:flex; align-items:center; gap:10px; pointer-events:auto;
+}
+#cartInteract,#cartBrake {
+  border:1px solid #ecbd8a; background:#2b332a; color:#fff3d9; border-radius:3px;
+  box-shadow:0 2px 10px #121a1555; min-height:40px; padding:5px 12px;
+  font:700 1rem var(--cond); white-space:nowrap; line-height:1.15;
+}
+#cartInteract {display:flex; align-items:center; justify-content:center; gap:8px;}
+#cartInteract:hover,#cartInteract:focus-visible {background:#414e3f; border-color:#ffd3a2;}
+#cartInteract kbd {background:#e6e4cc; color:#283027; font:600 .75rem var(--mono); border:0; border-radius:2px; padding:3px 6px;}
+#cartDash {
+  display:flex; align-items:center; gap:8px; color:#f6f1dc; background:#202920ed;
+  border:1px solid #b6cab16b; border-left:3px solid #aad7cd; border-radius:2px;
+  box-shadow:0 2px 10px #10181140; padding:6px 12px 5px 9px; text-align:left;
+}
+#cartDash > svg {width:29px; height:24px; color:#b6ddcf;}
+#cartDash > svg,.cartMapCaption svg,.estateCart svg,.atlasSwatch.cart svg,.atlasSwatch.driver svg {
+  fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round;
+}
+#cartGear {display:block; font:500 .60rem/1 var(--mono); text-transform:uppercase; letter-spacing:.08em; color:#c6d6bd;}
+#cartDash strong {display:flex; align-items:baseline; gap:4px;}
+#cartSpeed {font:700 1.65rem/1 var(--cond); font-variant-numeric:tabular-nums;}
+#cartDash small {font:normal .58rem/1 var(--mono); text-transform:uppercase;}
+#cartBrake,.driveHints {display:none;}
+#view.driving .gear,#view.driving .reticle,#view.driving #captureGuide,#view.driving .albumBtn,#view.driving .touchActions {display:none;}
+#view.driving .launch {position:static; transform:none; justify-items:start;}
+#view.driving .lower {justify-content:flex-start;display:flex;}
+body:has(#view.driving) .hints {display:none;}
+body:has(#view.driving) .driveHints {display:flex; align-items:center; gap:clamp(12px,2vw,27px); color:#c0c3b9; font-size:.78rem;}
+.driveHints span {display:flex; align-items:center; gap:5px;}
+#view.driving #pad {border-color:#bed9c6; box-shadow:inset 0 0 0 5px #28372eb3;}
+#view.driving #cartBrake {display:block; pointer-events:auto; touch-action:none; min-height:45px; min-width:68px;}
+#cartBrake:active {background:#63503b;}
+#view:has(#touchControls:not([hidden])) #cartInteract {min-height:44px;}
+#view:has(#touchControls:not([hidden])) #cartInteract kbd {display:none;}
+#view.driving:has(#touchControls:not([hidden])) .lower {
+  bottom:15px; left:100px; right:98px; justify-content:center;
+}
+#view.driving:has(#touchControls:not([hidden])) .launch {position:static; transform:none;}
+@media(max-width:630px),(pointer:coarse) {
+  body:has(#view.driving) .driveHints {display:none;}
+}
+@media(max-width:600px) {
+  #view.driving:has(#touchControls:not([hidden])) .lower {left:82px; right:84px; bottom:14px;}
+  #cartHud {gap:5px;}
+  #cartDash {padding:4px 7px; gap:4px;}
+  #cartDash > svg {display:none;}
+  #cartInteract {padding:5px 9px;}
+}
+@media(max-height:540px) and (min-aspect-ratio:1/1) {
+  #view.driving:has(#touchControls:not([hidden])) .lower {bottom:10px; justify-content:flex-start; left:78px; right:88px;}
+  #view:not(.driving):has(#touchControls:not([hidden])) #cartInteract {min-height:38px;}
+}
+#view.driving #pad {position:relative;}
+#view.driving #pad::before {
+  content:'Drive / steer'; position:absolute; bottom:calc(100% + 3px); left:50%; transform:translateX(-50%);
+  color:#f1f4dd; background:#253126db; border-radius:2px; padding:2px 4px; white-space:nowrap;
+  font:500 .59rem/1.1 var(--mono); pointer-events:none;
+}

@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#151918"><meta name="author" content="Judge Dean LLC"><meta name="description" content="Photograph a wedding across Villa Luce, shoot a chapel guitar solo and a stormy cake dive, or rewind the bouquet toss for a second angle.">
+<title>Shutter Rush · Judge Dean LLC</title>
+<link rel="icon" href="mark.svg"><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="estate-map.css"><link rel="stylesheet" href="cart-ui.css">
+<script type="importmap">{"imports":{"three":"./vendor/three.module.js"}}</script>
+</head>
+<body>
+<svg class="symbols" xmlns="http://www.w3.org/2000/svg"><defs>
+<symbol id="shutter" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="m8 3.4 4.6 7.9m5.4-6.6-4.6 8M21.5 12h-9.1m3.5 8.7-4.6-8M6 19.3l4.6-8M2.5 12h9.2"/></symbol>
+<symbol id="audio" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4zM16 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></symbol>
+<symbol id="mute" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4zM17 9l5 6m0-6-5 6"/></symbol>
+<symbol id="expand" viewBox="0 0 24 24"><path d="M9 4H4v5m11-5h5v5M4 15v5h5m11-5v5h-5"/></symbol>
+<symbol id="pause" viewBox="0 0 24 24"><path stroke-width="4" d="M8 5v14m8-14v14"/></symbol>
+<symbol id="pin" viewBox="0 0 24 24"><path d="M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0Z"/><circle cx="12" cy="10" r="2"/></symbol>
+<symbol id="clock" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8.2"/><path d="M12 8v5l3 2M9 2h6"/></symbol>
+<symbol id="camera" viewBox="0 0 24 24"><path d="M3 7h4l2-3h6l2 3h4v13H3z"/><circle cx="12" cy="13" r="4"/></symbol>
+<symbol id="card" viewBox="0 0 24 24"><path d="M6 3h9l4 5v13H6zM9 4v5m3-5v5m3-4v4"/></symbol>
+<symbol id="battery" viewBox="0 0 24 24"><rect x="2" y="6.5" width="18" height="11" rx="1"/><path d="M22 10v4M5 9v6m4-6v6m4-6v6m4-6v6"/></symbol>
+<symbol id="gallery-icon" viewBox="0 0 24 24"><path d="M3 6h15v14H3zM7 3h14v13M4 17l4-5 3 3 2-2 4 5"/><circle cx="13" cy="10" r="1"/></symbol>
+<symbol id="play" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" d="m7 3 14 9-14 9z"/></symbol>
+<symbol id="keys" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M5 9h2m2 0h2m2 0h2m2 0h2M5 12h2m2 0h2m2 0h2m2 0h2M7 15h10"/></symbol>
+<symbol id="golfCart" viewBox="0 0 28 22"><path d="M5 3h15m-13 0 1.9 9m8-9 2.5 9M3 13h9l2.1-4h2.5m-4.8 5h8.8l1-2.1h2.7l1.2 4.6H23m-5.7.8h-6.6m-7.3-1.1L3 13m3.4 1.1a2.6 2.6 0 1 0 .1 5.2 2.6 2.6 0 0 0-.1-5.2Zm14 0a2.6 2.6 0 1 0 .1 5.2 2.6 2.6 0 0 0-.1-5.2Z"/></symbol>
+<symbol id="driveArrow" viewBox="0 0 24 28"><path d="M12 1.5 8 6h8Z" fill="currentColor" stroke="none"/><rect x="5" y="8" width="14" height="15" rx="3"/><path d="M8 13h8l-1-3H9Zm-5-2v4m18-4v4M3 18v4m18-4v4m-12-2h6"/></symbol>
+<symbol id="close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+</defs></svg>
+<header><div class="brand"><span class="logo"><svg><use href="#shutter"/></svg></span><h1>SHUTTER <i>RUSH</i></h1></div><span class="headerline"></span><div class="location"><svg><use href="#pin"/></svg> VILLA LUCE <b>/</b> <span id="area">Ceremony garden</span></div><div class="tools">
+<button id="sound" class="icon" aria-label="Mute sound" title="Mute sound"><svg><use href="#audio"/></svg></button>
+<button id="full" class="icon" aria-label="Toggle fullscreen" title="Toggle fullscreen"><svg><use href="#expand"/></svg></button>
+<button id="pauseBtn" class="icon" aria-label="Pause or resume assignment" title="Pause or resume"><svg><use href="#pause"/></svg></button></div></header>
+<main id="view" aria-label="Wedding photography game">
+<canvas id="world" tabindex="0" aria-label="Three-dimensional wedding venue"></canvas><div class="vignette"></div>
+<div id="captureGuide" aria-hidden="true"><i></i><i></i><i></i><i></i><span class="finderReadout"><b id="finderLens">85 mm</b> · AF-C</span></div>
+<div class="topHud">
+<section class="brief"><span class="micro orange"><span class="ordinal" id="takeNumber">01</span> <span id="briefType">WEDDING ASSIGNMENT</span></span><h2 id="briefTitle">The full wedding day</h2><div class="rule"></div><div id="takeBrief">Twelve minutes to cover the estate. Follow each map pin and deliver the couple’s wedding album.</div><div id="classicGoals" hidden><div class="objective"><span id="checkFrames" class="check"></span><span>Take 150 photos</span><b id="frameGoal">0 / 150</b></div><div class="objective"><span id="checkMoments" class="check"></span><span>Catch key moments</span><b id="momentGoal">0 / 3</b></div><div class="objective"><span id="checkCover" class="check"></span><span>Cover with both newlyweds</span></div></div></section>
+<section id="dayHud" hidden aria-label="Live wedding schedule">
+  <div class="dayDispatch"><span>Wedding desk</span><time id="dayClock">9:00 AM</time><span class="dayCount" id="dayCount">0 filed</span></div>
+  <div class="dayDeadline"><span class="dayState" id="dayState"></span><span id="dayWindow"></span></div>
+  <h2 id="dayTitle"></h2>
+  <div class="dayRoute" id="dayRoute"><svg aria-hidden="true"><use href="#pin"/></svg><strong id="dayArea"></strong><span id="dayDirection"></span></div>
+  <p id="dayLead"></p>
+  <div class="dayFollowing" id="dayFollowing" hidden></div>
+</section>
+<section class="meters"><div class="timer"><div><svg><use href="#clock"/></svg><span class="micro">TIME LEFT</span></div><strong id="timer">12:00</strong></div><div class="points"><span class="micro">SCORE</span><b id="score">000000</b></div>
+<button type="button" id="mapBtn" hidden aria-label="Open estate map" aria-haspopup="dialog" title="Open estate map (M)">
+  <span class="estateMapTab">Estate map <kbd>M</kbd></span><span class="estateInsetSurface"></span><span class="cartMapCaption" hidden><svg aria-hidden="true"><use href="#golfCart"/></svg><span></span></span>
+</button></section>
+</div>
+<div class="reticle"><i></i><i></i><i></i><i></i><span></span></div>
+<div id="nudgeHint" hidden><kbd>G</kbd> Nudge</div>
+<div id="echoMarker" hidden aria-hidden="true">Take 01 · You</div>
+<div id="rewindNotice" hidden><span>◀◀ &nbsp; REWIND</span><strong>Back to the toss</strong><small>Your first photographer will replay.</small></div>
+<div id="toast" role="status"></div><div id="flash"></div>
+<div class="lower">
+<div class="gear"><div class="gearTitle"><svg><use href="#camera"/></svg><span id="kitLabel">85 mm · Telephoto</span><span id="zoomControls" hidden><button id="zoomLess" aria-label="Zoom out">−</button><button id="zoomMore" aria-label="Zoom in">+</button></span></div>
+<div class="cameraSettings"><span id="formatLabel">Landscape</span><span id="stanceLabel">Standing</span></div>
+<div class="serviceStatus"><span id="serviceLabel" role="status"></span><i><b id="serviceFill"></b></i></div>
+<div class="resources"><div class="resource"><span class="micro"><svg><use href="#card"/></svg> SD CARD</span><strong><span id="cardCount">36</span><small> / 36</small></strong><div class="bar"><i id="cardBar"></i></div></div>
+<div class="resource"><span class="micro"><svg><use href="#battery"/></svg> BATTERY</span><strong><span id="energy">100</span><small>%</small></strong><div class="bar"><i id="batteryBar"></i></div></div></div></div>
+<div class="launch"><div id="cartHud" hidden>
+  <div id="cartDash" hidden><svg aria-hidden="true"><use href="#golfCart"/></svg><div><span id="cartGear">Drive</span><strong><b id="cartSpeed">0</b><small>km/h</small></strong></div></div>
+  <button type="button" id="cartInteract"><kbd>E</kbd><span>Drive cart</span></button>
+</div><button class="primary" id="start" disabled><svg><use href="#play"/></svg><span>Loading venue</span></button><button id="stormStart" class="alternate" disabled>Storm wedding · 65 sec</button><button id="classicStart" class="alternate" disabled>Bouquet replay · 2 takes</button><div id="moment" hidden><span class="pulse"></span><span id="momentText">Couple portraits</span></div></div>
+<button class="albumBtn" id="album"><svg><use href="#gallery-icon"/></svg><span><small>CONTACT SHEET</small><strong><span id="frames">0000</span> <em>FRAMES</em></strong></span></button>
+</div>
+<div id="touchControls" hidden><div id="pad" aria-label="Movement joystick"><i></i></div><button type="button" id="cartBrake" aria-label="Hold to brake">Brake</button><div class="touchActions"><button id="touchKit" aria-label="Switch cameras">Camera</button>
+<button id="touchFormat" aria-label="Rotate photo orientation">Rotate</button>
+<button id="touchCrouch" aria-pressed="false">Crouch</button>
+<button id="touchShoot">Shoot</button>
+<button id="touchSD">Card</button>
+<button id="touchBat">Battery</button>
+<button id="touchAim" aria-pressed="false">Aim</button>
+<button id="touchNudge" aria-label="Nudge a loose prop">Nudge</button></div></div>
+</main>
+<footer><button id="controls"><svg><use href="#keys"/></svg> Controls</button><div class="hints"><span><kbd>W A S D</kbd> Move</span><span><kbd>Mouse</kbd> Look</span><span class="sprintHint"><kbd>Shift</kbd> Sprint</span><span><kbd>LMB</kbd> Shoot</span><span><kbd>RMB</kbd> Aim</span><span class="kitHint" title="Switch camera. 1 selects wide and 2 selects telephoto."><kbd>Q</kbd> Camera</span><span class="formatHint"><kbd>V</kbd> Rotate</span><span class="stanceHint"><kbd>C</kbd> Crouch</span><span class="supplyHint"><kbd>R / B</kbd> Supplies</span></div><div class="driveHints" aria-label="Driving controls"><span><kbd>W / S</kbd> Drive / reverse</span><span><kbd>A / D</kbd> Steer</span><span><kbd>Space</kbd> Brake</span><span><kbd>M</kbd> Estate map</span></div><span class="feed"><i></i><span id="stateLabel">STANDBY</span></span></footer>
+<dialog id="panel"><button class="icon close" id="closePanel" aria-label="Close panel"><svg><use href="#close"/></svg></button><div id="panelBody"></div></dialog>
+<div id="error" hidden role="alert"></div>
+<script type="module" src="game.js"></script>
+</body></html>
