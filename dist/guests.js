@@ -348,7 +348,7 @@ export function buildWeddingGuest(scene, record, index) {
     dayLegs.forEach(({hip})=>hip.visible=false);
   }else if (!legs.length) legsAndShoes(part,o,gowned,seated);
   const newlywed=role==='bride'||role==='groom';
-  if(newlywed)weddingAttire(part,o);else if(gowned)gown(part,o,shift,seated);else tailoredJacket(part,o,shift);
+  if(newlywed)weddingAttire(part,o,new Part(),body);else if(gowned)gown(part,o,shift,seated);else tailoredJacket(part,o,shift);
   part.stick([0,1.38+shift,0],[0,1.526+shift,0],.068,.059,o.skin,10);
   part.mesh(body,newlywed?portraitMaterial:surface);
   head.position.y=1.494+shift;

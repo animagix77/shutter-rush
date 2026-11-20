@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { buildReceptionHall } from './reception-hall.js';
 import { buildEstateExpansion } from './estate-expansion.js';
+import { createEstateLighting } from './estate-lighting.js';
 import { createEstateWind } from './estate-wind.js';
 
 export function buildVenue(scene) {
@@ -73,36 +74,47 @@ export function buildVenue(scene) {
     const euler = new THREE.Euler().setFromQuaternion(new THREE.Quaternion().setFromUnitVectors(up,delta.normalize()));
     add('rod',color,(ax+bx)/2,(ay+by)/2,(az+bz)/2,r,length,r,euler.x,euler.y,euler.z);
   }
+  // Store the same footprint as the visible floor, including rotated estate lanes.
+  // At a seam the upper layer wins, so a rug or a timber deck masks its base.
+  const floors=[];
+  function footing(material,x,z,w,d,top,yaw=0){
+    floors.push({material,x,z,hw:w/2,hd:d/2,top,c:Math.cos(yaw),s:Math.sin(yaw)});
+  }
+  function footingAt(x,z){
+    let top=-Infinity,material='grass';
+    for(const f of floors){
+      if(f.top<top)continue;
+      const dx=x-f.x,dz=z-f.z;
+      if(Math.abs(dx*f.c-dz*f.s)<=f.hw&&Math.abs(dx*f.s+dz*f.c)<=f.hd){
+        top=f.top;material=f.material;
+      }
+    }
+    return material;
+  }
   function flagstone(x,z,w,d) {
+    footing('stone',x,z,w+.01,d+.01,.038);
     box(pick([0xcbb29a,0xc3aa90,0xc9af96,0xcfb99d]),x,0.011,z,w,0.054,d,0,0.002*random());
   }
 
   scene.background = new THREE.Color(0xf1c7a1);
   scene.fog = new THREE.FogExp2(0xe5c7ad, 0.015);
-  const daylight = new THREE.HemisphereLight(0xffefdb, 0xb29f8b, 2.0);
-  scene.add(daylight);
-  const sun = new THREE.DirectionalLight(0xffdfac, 2.35);
-  sun.position.set(-10,23,11);
-  sun.target.position.set(5,0,1);
-  scene.add(sun,sun.target);
-  sun.castShadow = true;
-  sun.shadow.mapSize.set(2048,2048);
-  Object.assign(sun.shadow.camera,{left:-33,right:33,top:28,bottom:-28,near:0.1,far:60});
-  sun.shadow.normalBias = 0.018;
-  sun.shadow.bias = -0.0008;
+  const lighting=createEstateLighting(scene);
 
   const skyMaterial = new THREE.ShaderMaterial({
-    side:THREE.BackSide, depthWrite:false, fog:false, uniforms:{ dusk:{value:0}, storm:{value:0} },
+    side:THREE.BackSide, depthWrite:false, fog:false, uniforms:{ dusk:{value:0}, storm:{value:0}, sunDirection:{value:lighting.direction} },
     vertexShader:`varying vec3 direction; void main(){direction=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
-    fragmentShader:`varying vec3 direction; uniform float dusk,storm;
+    fragmentShader:`varying vec3 direction; uniform float dusk,storm;uniform vec3 sunDirection;
       float hash(vec2 p){return fract(sin(dot(p,vec2(41.34,113.97)))*18315.231);}
       float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hash(i),hash(i+vec2(1.,0.)),f.x),mix(hash(i+vec2(0.,1.)),hash(i+vec2(1.)),f.x),f.y);}
       void main(){vec3 n=normalize(direction);float h=max(n.y,0.);vec3 c=mix(vec3(.94,.75,.60),vec3(.32,.61,.79),smoothstep(-.04,.64,h));c=mix(c,vec3(.17,.41,.65),smoothstep(.58,1.,h)*.7);
       vec2 uv=n.xz/(h+.12)*vec2(1.4,5.);float f=noise(uv)*.55+noise(uv*2.11)*.28+noise(uv*4.23)*.13+noise(uv*8.2)*.04;
       float clouds=smoothstep(.53,.78,f)*smoothstep(.015,.18,h)*(1.-smoothstep(.65,1.,h));c=mix(c,vec3(1.,.91,.79),clouds*.55);
-      float glow=pow(max(dot(n,normalize(vec3(-.66,.28,-.83))),0.),24.);c+=vec3(.17,.1,.04)*glow;
+      float sunDot=max(dot(n,sunDirection),0.);
+      float glow=pow(sunDot,26.);c+=vec3(.30,.16,.055)*glow;
       vec3 night=mix(vec3(.33,.19,.27),vec3(.028,.046,.115),smoothstep(-.02,.45,h));
       c=mix(c,night,dusk);
+      float disk=smoothstep(.99987,.99995,sunDot);
+      c+=(1.-dusk)*(1.-storm)*(vec3(1.,.74,.42)*disk+.075*vec3(1.,.77,.52)*pow(sunDot,280.));
       if(storm>0.) {
         float cloud=noise(uv*.67)+.27*noise(uv*2.8);
         vec3 rainSky=mix(vec3(.073,.095,.133),vec3(.29,.32,.36),smoothstep(.25,1.,cloud));
@@ -117,6 +129,8 @@ export function buildVenue(scene) {
   scene.add(sky);
 
   // The valley skyline uses several overlapping ridges with individually lit facets.
+  const ridgeMaterial=new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.DoubleSide});
+  const ridgeDay=new THREE.Color(0xffffff),ridgeNight=new THREE.Color(0x7c8094),ridgeRain=new THREE.Color(0x91a5b8);
   function ridge(z, base, amplitude, wave, colors, phase) {
     const vertices = [], vertexColors = [];
     const heights = [];
@@ -138,7 +152,7 @@ export function buildVenue(scene) {
     const g=new THREE.BufferGeometry();
     g.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));
     g.setAttribute('color',new THREE.Float32BufferAttribute(vertexColors,3));
-    const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.DoubleSide,fog:false}));
+    const m=new THREE.Mesh(g,ridgeMaterial);
     scene.add(m);
   }
   ridge(-65,8.7,5.3,.105,[0xb5afb0,0xb5abad,0xbdb1b0],2.9);
@@ -167,6 +181,7 @@ export function buildVenue(scene) {
     box(0x8b8b66,side*3.52,-.004,2.1,3.75,.046,9.25);
     for(let j=0;j<14;j++) flagstone(side*1.67,-6.4+j*1.16,.23,1.15);
   }
+  footing('carpet',0,1.1,3.10,15.8,.046);
   box(0xf4dfbf,0,.026,1.1,3.10,.04,15.8);
   for(let side of [-1,1]) {
     box(0xc5a578,side*1.48,.053,1.1,.015,.008,15.8);
@@ -497,9 +512,9 @@ export function buildVenue(scene) {
   }
   // Separate distant rooms so the camera can cull their instanced furnishings.
   batchArea='Reception';
-  const hall=buildReceptionHall(scene,{exterior:()=>{batchArea='Estate';},box,rod,add,occlude,colliders,chair,receptionTable,urn,
+  const hall=buildReceptionHall(scene,{footing,exterior:()=>{batchArea='Estate';},box,rod,add,occlude,colliders,chair,receptionTable,urn,
     gardenSpray,olive,cypress,lightBulb,flagstone,bendFrom,wind});
-  const outer=buildEstateExpansion(scene,{areaBatch:name=>{batchArea=name;},box,add,rod,occlude,colliders,lightBulb,chair,bendFrom,wind});
+  const outer=buildEstateExpansion(scene,{footing,areaBatch:name=>{batchArea=name;},box,add,rod,occlude,colliders,lightBulb,chair,bendFrom,wind});
   for(const [key,batch] of instances) {
     const geometry=batch.flex ? batch.geometry.clone() : batch.geometry;
     const mesh=new THREE.InstancedMesh(geometry,batch.material,batch.matrices.length);
@@ -508,36 +523,18 @@ export function buildVenue(scene) {
     mesh.name=key.split(':',2).join(' ');mesh.castShadow=batch.material===clay;mesh.receiveShadow=mesh.castShadow;
     mesh.computeBoundingSphere();if (batch.flex) mesh.boundingSphere.radius+=.6;scene.add(mesh);
   }
-  const lateSun=new THREE.Color(0xffa36c), noonSun=sun.color.clone();
-  const blueHour=new THREE.Color(0x9bb2e4), noonSky=daylight.color.clone();
-  const eveningMist=new THREE.Color(0x625d78), morningMist=scene.fog.color.clone();
-  const cloudLight=new THREE.Color(0xaebdd1),rainMist=new THREE.Color(0x8994a0);
-  let previousTime=null;
   function update(seconds,day=false,player=null,duration=300,rain=0){
-    // Keep the camera inside the sky dome, including on the outer estate.
-    // Moving the light's target with the photographer preserves local shadow resolution.
-    const px=day&&player?player.x:0,pz=day&&player?player.z:0;
-    sky.position.set(px,0,pz);
-    sun.target.position.set(5+px,0,1+pz);
+    sky.position.set(player?.x??0,0,player?.z??0);
     const t=day?THREE.MathUtils.clamp(seconds/duration,0,1):-1;
-    if(t===previousTime)return;
-    previousTime=t;
-    const dusk=day?THREE.MathUtils.smoothstep(t,.53,.92):0;
-    const daylightArc=day?Math.sin(Math.PI*t):1;
-    daylight.intensity=(2-.50*dusk)*(1-.18*rain);
-    daylight.color.copy(noonSky).lerp(blueHour,dusk).lerp(cloudLight,.62*rain);
-    sun.color.copy(noonSun).lerp(lateSun,dusk);
-    sun.intensity=(2.35-1.60*dusk)*(1-.68*rain);
-    sun.position.set(px+(day?-16+34*t:-10),day?12+14*daylightArc:23,11+pz);
-    scene.fog.density=day?.0085+.009*rain:.015;
-    scene.fog.color.copy(morningMist).lerp(eveningMist,dusk).lerp(rainMist,.77*rain);
+    const dusk=lighting.update(t,player,rain,hall);
+    skyMaterial.uniforms.dusk.value=dusk;
+    ridgeMaterial.color.copy(ridgeDay).lerp(ridgeNight,dusk).lerp(ridgeRain,.65*rain);
     skyMaterial.uniforms.storm.value=rain;
     ground.material.roughness=1-.62*rain;
-    skyMaterial.uniforms.dusk.value=dusk;
   }
   function blocks(x,z){
     return hall.blocks(x,z)||outer.blocks(x,z);
   }
-  return {colliders,occluders,bounds:outer.bounds,blocks,locationAt:outer.locationAt,update,animateAtmosphere:wind.update,
+  return {footingAt,colliders,occluders,bounds:outer.bounds,blocks,rigLight:lighting.rigLight,locationAt:outer.locationAt,update,animateAtmosphere:wind.update,
     dressFoliage:(mesh, weight) => wind.cloth(mesh, weight, true)};
 }

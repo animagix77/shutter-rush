@@ -62,6 +62,7 @@ let simTime=0, lastFrame=0, liveDue=0, nextShot=0, recoil=0, reload=null, messag
 let yaw=0, pitch=0, lookTarget=0, aimed=false, held=false, keyboardHeld=false, queuedShot=false, movement=0;
 let drag=null, mouseSample=null, edgeX=0, edgeY=0, lastPointerType='', ownedLock=false;
 let redraw=true;
+let blackoutUntil=0, lastExposure=-Infinity;
 let muted=false, audio=null, panelOpener=null;
 const keys=new Set(), moments=new Set(), photographed=new Set(), samples=[], highlights=new Map();
 const stick={x:0,y:0,id:null}, player = new THREE.Vector3(0,1.65,6.2);
@@ -76,6 +77,7 @@ const weddingTime=()=>isStorm()?stormDayTime(elapsed()):elapsed();
 let dayHudDue=0, lastPin=null;
 let propPhysics, lastPropSound=-Infinity, nextNudge=0, lastNudge=-Infinity, echoNudgeIndex=0;
 let nextReachCheck=0;
+const takeSteps=[];let echoStepIndex=0;
 const takeNudges=[], echoHand=new THREE.PerspectiveCamera();
 let cart, cartModel, motor, driverLook=0, lastDriverLook=0, touchBrake=false;
 const cartCenter=new THREE.Vector3();
@@ -144,7 +146,7 @@ function motorSound(){
   motor.osc.frequency.setTargetAtTime(57+pace*149,audio.currentTime,.085);
   motor.volume.gain.setTargetAtTime(.002+pace*.023,audio.currentTime,.075);
 }
-function shutterSound(){if(!muted&&audio?.state==='running')soundscape?.shutter(kit);}
+function shutterSound(){if(!muted&&audio?.state==='running')soundscape?.shutter(kit,{inside:underRoof(player.x,player.z)});}
 function announce(msg,seconds=1.3){$('toast').textContent=msg;messageUntil=simTime+seconds;}
 function sync(){
   const seconds=Math.ceil(remaining);
@@ -220,10 +222,12 @@ function startPlay(){
 }
 function resetCameraForTake(){
   cart.reset();if(isStorm())Object.assign(cart.state,{x:-21.7,z:29.1,yaw:-Math.PI/2});
+  blackoutUntil=0;lastExposure=-Infinity;
   soundscape?.stop();driverLook=lastDriverLook=0;
   propPhysics.reset();if(isToss()&&take===1)propPhysics.record(0);
   nextReachCheck=0;nextNudge=0;lastNudge=lastPropSound=-Infinity;echoNudgeIndex=0;
-  if(!isToss()||take===1)takeNudges.length=0;
+  echoStepIndex=0;
+  if(!isToss()||take===1){takeNudges.length=0;takeSteps.length=0;}
   supplies.tele=freshBody();supplies.wide=freshBody();
   zoomIndex=0;teleFocal=85;wheelDistance=lastWheelAt=0;
   kit=isToss()&&take===2?'tele':'wide';portrait=false;changingKit=null;
@@ -290,7 +294,7 @@ function rewindFrame(dt){
   }
   camera.fov=65;camera.updateProjectionMatrix();camera.updateMatrixWorld();
   propPhysics.rewindTo(t);
-  party.update(t,'bouquetTake',camera.position,t);venue.update(t);
+  party.update(t,'bouquetTake',camera.position,t);venue.update(t,false,camera.position);
   animateBreeze(t);
   if(rewindTime>=shadowDue){renderer.shadowMap.needsUpdate=true;shadowDue=rewindTime+.16;}
   renderer.clear();renderer.render(scene,camera);
@@ -477,6 +481,10 @@ function expose(){
     if(hit)label=grades.map(g=>g.event.title).join(' + ');
     for(const {event,quality} of grades)points+=Math.max(0,quality-(keepers.get(event.id)?.quality??0));
   }
+  const burst=simTime-lastExposure<.24;
+  lastExposure=simTime;
+  blackoutUntil=simTime+(kit==='tele'?.054:.033);
+  guide.style.setProperty('--shutter-opacity',burst?'.27':'.81');
   score+=points;body.card--;body.battery--;exposures++;recoil=1;shutterSound();
   const item=makeExposure({id:exposures,seen,hit,label,points,auto:false});
   if(isToss()){
@@ -594,7 +602,12 @@ function movePlayer(dt){
   strideDistance+=distance;
   if(strideDistance>=strideLength&&distance>.002){
     strideDistance%=strideLength;
-    if(!muted&&audio?.state==='running')soundscape?.footstep({inside:underRoof(player.x,player.z),crouched,sprint,side:footSide});
+    const x=player.x+Math.cos(yaw)*footSide*.095,z=player.z-Math.sin(yaw)*footSide*.095;
+    const surface=venue.footingAt(x,z),inside=underRoof(x,z);
+    const stride={surface:surface==='carpet'?'wood':surface,soft:surface==='carpet',inside,crouched,sprint,
+      wet:inside||isToss()?0:rainAt(weddingTime()),side:footSide};
+    if(!muted&&audio?.state==='running')soundscape?.footstep(stride);
+    if(isToss()&&take===1)takeSteps.push({t:takeTime(),x,z,stride});
     footSide=-footSide;
   }
   step+=distance*(crouched?4.5:3.3);movement=dt>0?Math.min(1.7,distance/dt/3):0;
@@ -644,6 +657,14 @@ function moveWithProps(dt,beforeTake){
   if(isToss()&&take===2){
     const t=takeTime(), a=replay.sample(beforeTake), b=replay.sample(t);
     if(a&&b)echo={kind:'foot',fromX:a.footX,fromZ:a.footZ,fromYaw:a.yaw,x:b.footX,z:b.footZ,yaw:b.yaw,active:true};
+    // Only play a contact crossed on this frame. Seeking or a long stall
+    // must not play a backlog of old footsteps at the listener's position.
+    while(echoStepIndex<takeSteps.length&&takeSteps[echoStepIndex].t<=t){
+      const contact=takeSteps[echoStepIndex++];
+      if(t-contact.t>.20||muted||audio?.state!=='running')continue;
+      const {volume,pan,distance}=soundPerspective(player,yaw,contact,4);
+      soundscape?.footstep({...contact.stride,pan,distance,volume:.65*volume});
+    }
     while(echoNudgeIndex<takeNudges.length&&takeNudges[echoNudgeIndex].t<=t){
       const action=takeNudges[echoNudgeIndex++];
       echoHand.position.copy(action.position);echoHand.quaternion.copy(action.rotation);echoHand.updateMatrixWorld();
@@ -750,8 +771,8 @@ function frame(now){
   if(isToss()&&mode==='play'){
     if(take===1)replay.record(stageTime,photographerPose(progress));
     else if(replay.show(stageTime,camera.position)&&!muted&&audio?.state==='running'){
-      const pose=replay.sample(stageTime),{pan,volume}=soundPerspective(player,yaw,pose,6);
-      soundscape?.shutter(pose.kit,{pan,volume:.68*volume});
+      const pose=replay.sample(stageTime),{pan,volume,distance}=soundPerspective(player,yaw,pose,6);
+      soundscape?.shutter(pose.kit,{pan,volume:.68*volume,distance,inside:underRoof(pose.x,pose.z)});
     }
     const cue=tossCue(stageTime);
     if($('momentText').textContent!==cue)$('momentText').textContent=cue;
@@ -764,7 +785,7 @@ function frame(now){
   }else{
     drawCameraView(dt,{reduced,lagX,lagY,swapDip,progress,stageTime});
   }
-  recoil=Math.max(0,recoil-dt*9);$('flash').style.opacity=(recoil*.18).toFixed(3);
+  recoil=Math.max(0,recoil-dt*9);
   if(simTime>messageUntil)$('toast').textContent='';
   if(mode==='play'&&remaining===0){
     if(isToss()&&take===1)beginRewind();else endRun();
@@ -786,7 +807,9 @@ function drawCameraView(dt,{reduced,lagX,lagY,swapDip,progress,stageTime}){
   if(isToss()&&mode==='play')takeSafetyFrame();
   queuedShot=false;
   renderer.clear();renderer.render(scene,camera);
-  rig.update({time:simTime,dt,kit,portrait,focalLength:focalLength(),swapDip,lagX:lagX/.041,lagY:lagY/.029,
+  const blackout=mode==='play'&&!reduced&&simTime<blackoutUntil;
+  guide.classList.toggle('shutterClosed',blackout);
+  rig.update({blackout,lighting:venue.rigLight,viewQuaternion:camera.quaternion,time:simTime,dt,kit,portrait,focalLength:focalLength(),swapDip,lagX:lagX/.041,lagY:lagY/.029,
     reducedMotion:reduced,crouch:clamp((1.65-player.y)/.66,0,1),walk:Math.min(1,movement),
     nudge:handReach(),aim:lookTarget,shutter:recoil,reload:progress,reloadKind:reload?.kind,reloadSerial:reload?.serial??1});
   rig.group.visible=Boolean(reload)||lookTarget<.98;

@@ -12,8 +12,34 @@ const shade=(col,k)=>new THREE.Color(col).multiplyScalar(k);
 const portraitMaterial = new THREE.MeshStandardMaterial({
   vertexColors:true, roughness:.8, metalness:0, side:THREE.DoubleSide
 });
+// A small mipmapped opacity pattern keeps the lace readable in portraits and
+// averages into translucent tulle when the bride is across the aisle.
+function veilLace(){
+  const size=512,canvas=document.createElement('canvas');
+  canvas.width=canvas.height=size;
+  const ctx=canvas.getContext('2d');
+  ctx.fillStyle='#282828';ctx.fillRect(0,0,size,size);
+  ctx.lineWidth=1;ctx.strokeStyle='#787878';ctx.beginPath();
+  for(let x=-size;x<=size*2;x+=9){
+    ctx.moveTo(x,0);ctx.lineTo(x+size,size);
+    ctx.moveTo(x,0);ctx.lineTo(x-size,size);
+  }
+  ctx.stroke();
+  for(let x=0;x<size;x+=32){
+    ctx.strokeStyle='#dadada';ctx.lineWidth=2.4;ctx.beginPath();
+    ctx.moveTo(x,492);ctx.quadraticCurveTo(x+16,510,x+32,492);ctx.stroke();
+    for(const side of [-1,1]){
+      ctx.beginPath();ctx.ellipse(x+16+side*4,486,3.3,8,side*.53,0,tau);ctx.stroke();
+    }
+  }
+  const texture=new THREE.CanvasTexture(canvas);texture.flipY=false;return texture;
+}
+const satinFinish=new THREE.MeshPhysicalMaterial({
+  vertexColors:true,side:THREE.DoubleSide,roughness:.48,sheen:.7,
+  sheenColor:0xe7dbc8,sheenRoughness:.47
+});
 const silkNet=new THREE.MeshStandardMaterial({
-  color:0xf8eeea, side:THREE.DoubleSide, transparent:true, opacity:.31,
+  color:0xf8eeea, side:THREE.DoubleSide, transparent:true, opacity:.76,
   roughness:.84, depthWrite:false, forceSinglePass:true
 });
 
@@ -197,6 +223,7 @@ function hair(p,o,groom){
   }
 }
 function bridalVeil(head){
+  if(!silkNet.alphaMap)silkNet.alphaMap=veilLace();
   const cut=(u,v)=>{
     const a=(u-.5)*(1.80+.75*v),ring=.081+.112*v;
     const fold=.009*Math.cos(8*Math.PI*u+.7*v)*Math.sin(v*Math.PI*.8);
@@ -204,6 +231,9 @@ function bridalVeil(head){
       -.063-(ring+fold)*Math.cos(a)-.050*v];
   };
   const across=32, down=14, cloth=fabric(across,down,cut);
+  const uv=[];
+  for(let row=0;row<=down;row++)for(let col=0;col<=across;col++)uv.push(col/across,row/down);
+  cloth.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
   // The comb stays pinned. The hem can billow in either horizontal direction.
   const folds=Array.from({length:4},()=>new Float32Array(cloth.attributes.position.count*3));
   for(let j=0;j<=down;j++)for(let i=0;i<=across;i++){
@@ -266,7 +296,7 @@ export function updatePortraitExpressions(couple,t,phase,dayTime){
   }
 }
 
-function weddingSuit(p,o) {
+function weddingSuit(p,o,silk) {
   const wool=o.suit,satin=shade(wool,1.48),shirt=0xf9eee1;
   const shape=[[.779,.193,.137],[.83,.204,.140],[.99,.178,.125],[1.09,.185,.137],
     [1.225,.224,.151],[1.348,.237,.133],[1.401,.201,.103],[1.445,.080,.080]];
@@ -282,7 +312,7 @@ function weddingSuit(p,o) {
   p.profile([[1.406,.083,.079],[1.431,.079,.077],[1.451,.073,.071]],shirt,24);
   for(const s of [-1,1]){
     // Curved separately from the coat so the silk rolls all the way into the fastening.
-    p.add(fabric(5,18,(u,v)=>{
+    silk.add(fabric(5,18,(u,v)=>{
       const y=mix(1.092,1.426,v),edge=.016+.072*v;
       const peak=.046*Math.sin(Math.PI*v)+.031*Math.exp(-((v-.71)**2)/.0023);
       return point(s*(edge+(peak+.015)*u),y,.009+.003*Math.sin(Math.PI*u));
@@ -291,7 +321,7 @@ function weddingSuit(p,o) {
     p.poly([inner,fold,tip],0xe1d3c0);
     p.poly([inner,tip,point(s*.025,1.404,.018)],0xfff7e8);
     // A pinched center and broad outer edges give the bow its folded shape.
-    p.add(fabric(7,6,(u,v)=>{
+    silk.add(fabric(7,6,(u,v)=>{
       const x=s*mix(.003,.059,u),h=mix(.006,.018,u);
       return point(x,1.400+(v-.5)*2*h+.002*u,.020+.007*Math.sin(v*Math.PI)+.0015*Math.cos(v*tau)*u);
     }),0x263037);
@@ -313,9 +343,9 @@ function weddingSuit(p,o) {
   }
   p.oval([root[0],root[1]+.049,root[2]+.012],[.008,.007,.008],0xf1d2ad,6,9);
 }
-function bridalSilk(p,o){
+function bridalSilk(p,o,silk){
   const satin=new THREE.Color(o.suit);
-  p.add(fabric(52,18,(u,v)=>{
+  silk.add(fabric(64,22,(u,v)=>{
     const a=tau*(u-.5),flare=(1-v)**1.40,fold=Math.cos(a*14+v*.55)*.021*flare;
     const back=Math.max(0,-Math.cos(a));
     return [Math.sin(a)*(.158+.218*flare+fold), .066+.863*v+.010*flare*Math.cos(14*a),
@@ -345,6 +375,11 @@ function bridalSilk(p,o){
       cord(p,pts,[.0014,.002,.002,.002,.0011],thread,5);
     }
   }
+  // A row of covered fastenings follows the curved center-back seam.
+  for(let i=0;i<13;i++){
+    const y=.996+i*.022,depth=.119+.026*Math.sin((y-.996)*7.5);
+    p.oval([0,y,-depth],[.005,.0055,.0045],pearl,5,8);
+  }
   p.profile([[.967,.154,.119],[.987,.154,.119]],0xdbbf9d,24);
   const pearls=[];
   for(let i=0;i<15;i++){
@@ -353,7 +388,8 @@ function bridalSilk(p,o){
   }
   cord(p,pearls,Array(15).fill(.0014),gold,5);
 }
-export function weddingAttire(p,o){
-  if(o.role==='bride')bridalSilk(p,o);else weddingSuit(p,o);
+export function weddingAttire(p,o,silk,parent){
+  if(o.role==='bride')bridalSilk(p,o,silk);else weddingSuit(p,o,silk);
+  silk.mesh(parent,satinFinish);
 }
 export { portraitMaterial };

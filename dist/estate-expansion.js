@@ -20,7 +20,8 @@ export function buildEstateExpansion(scene,build) {
     walls.push({x,z,hw:w/2,hd:d/2});
     occlude(x,y,z,w,h,d);
   }
-  function flooring(x,z,w,d,c,trim,level=.027) {
+  function flooring(x,z,w,d,c,trim,level=.027,material='stone') {
+    build.footing(material,x,z,w,d,level+.029);
     box(trim,x,level-.014,z,w+.19,.047,d+.19);
     box(c,x,level+.012,z,w,.034,d);
   }
@@ -69,7 +70,7 @@ export function buildEstateExpansion(scene,build) {
     for(const sx of [-1,1])for(const sz of [-1,1])box(color,x+sx*(w/2-.12),.44,z+sz*(d/2-.12),.13,.88,.13);
   }
   function rug(x,z,w,d,colors){
-    flooring(x,z,w,d,colors[0],colors[1],.062);
+    flooring(x,z,w,d,colors[0],colors[1],.062,'carpet');
     const line=(dx,dz,sx,sz,c,y=.095)=>box(c,x+dx,y,z+dz,sx,.004,sz);
     for(const s of [-1,1])for(const inset of [.15,.33]){
       line(0,s*(d/2-inset),w-2*inset,.055,colors[1]);
@@ -108,7 +109,7 @@ export function buildEstateExpansion(scene,build) {
   function room(name,wallColor,shutters){
     const {x,z,w,d}=mark(name),h=4.45,sill=.94,eave=4.1;
     areaBatch(name);
-    flooring(x,z,w,d,0xc9b498,0xbaa386);
+    flooring(x,z,w,d,0xc9b498,0xbaa386,.027,'wood');
     for(let v=-d/2+.4;v<d/2;v+=.48)box(0xbda88d,x,.061,z+v,w,.005,.012);
     // Each wall has a generous central passage and glazed sidelights.
     for(const alongX of [false,true])for(const side of [-1,1]){
@@ -364,6 +365,7 @@ export function buildEstateExpansion(scene,build) {
     walls.push({x:lake.x,z:42.25,hw:lake.w/2,hd:4.75},{x:lake.x,z:63.75,hw:lake.w/2,hd:4.75},
       {x:94,z:53,hw:5,hd:6});
     const deckStart=71.5,deckEnd=x+w/2;
+    build.footing('wood',(deckStart+deckEnd)/2,z,deckEnd-deckStart,d,.13);
     box(wood,(deckStart+deckEnd)/2,.057,z,deckEnd-deckStart,.095,d);
     for(let xx=deckStart+.15;xx<deckEnd;xx+=.31)
       box(Math.floor(xx*8)%2===0?0xb79672:0xad8c6c,xx,.113,z,.294,.030,d-.06);
@@ -484,8 +486,8 @@ export function buildEstateExpansion(scene,build) {
   }
   {
     const {x,z,w,d}=mark('Sparkler lawn');areaBatch('Sparkler lawn');
-    flooring(x,z,w,d,0x84936b,0xadb48b);
-    flooring(x,z,4.16,d+.9,0xd5bf9e,0xcfb899,.055);
+    flooring(x,z,w,d,0x84936b,0xadb48b,.027,'grass');
+    flooring(x,z,4.16,d+.9,0xd5bf9e,0xcfb899,.055,'gravel');
     for(const s of [-1,1]){
       for(const zz of [-8.7,-4.8,0,4.8,8.7]){
         const lx=x+s*7.4,lz=z+zz;
@@ -514,6 +516,7 @@ export function buildEstateExpansion(scene,build) {
       const length=Math.hypot(dx,dz),cx=(a.x+b.x)/2,cz=(a.z+b.z)/2;
       if(cx>-22&&cx<34&&cz<22.7)continue;
       const yaw=Math.atan2(dx,dz);
+      build.footing('gravel',cx,cz,4.48,length+.33,.017,yaw);
       box(0xbba888,cx,-.017,cz,4.48,.046,length+.33,0,yaw);
       box(0xcfc0a4,cx,.0005,cz,4.1,.033,length+.27,0,yaw);
     }

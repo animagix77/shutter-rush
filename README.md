@@ -32,7 +32,7 @@ Select **Storm wedding · 65 sec** for a two-photo assignment. Start outside the
 
 The chapel solo and storm reception draw on the wedding sequences in the [official *November Rain* video](https://www.youtube.com/watch?v=8SbUC-UaAxE).
 
-Sound starts when you enter a shoot. Turn toward the chapel to locate the amplifier by ear. Under cover, listen for rain on the roof and the sounds of the reception. Footsteps change from gravel outside to heels on the floor under cover. The two camera bodies have different shutter mechanisms, audible from your first photographer’s position during bouquet replay. Use the speaker button to mute or unmute.
+Sound starts when you enter a shoot. Turn toward the chapel to locate the amplifier by ear. Under cover, listen for rain on the roof and the sounds of the reception. Footsteps follow the ground under each shoe, including gravel paths, turf, rugs, stone terraces and timber floors. Exposed ground picks up wet footfalls in the storm. Each camera body has its own recorded shutter. In bouquet replay, your first photographer’s clicks and footsteps come from their recorded position. [Field recording credits](dist/sound/FIELD-RECORDINGS.md) Use the speaker button to mute or unmute.
 
 The minimap shows your position and heading. The orange drop pin pings the next job when you file a keeper or a deadline passes. Follow the route around walls, furnishings and the lake. A second pin appears when the bonus dance opens during the bouquet toss. Press **M** or tap the minimap to pause and unfold the estate map. Select a landmark to see its assignments and which pages you have filed. Press **M** or choose **Back to camera** to resume.
 

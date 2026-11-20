@@ -5,6 +5,7 @@
 <meta name="theme-color" content="#151918"><meta name="author" content="Judge Dean LLC"><meta name="description" content="Photograph a wedding across Villa Luce, shoot a chapel guitar solo and a stormy cake dive, or rewind the bouquet toss for a second angle.">
 <title>Shutter Rush · Judge Dean LLC</title>
 <link rel="icon" href="mark.svg"><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="estate-map.css"><link rel="stylesheet" href="cart-ui.css">
+<link rel="preload" href="./sound/field-foley.flac" as="fetch" crossorigin>
 <script type="importmap">{"imports":{"three":"./vendor/three.module.js"}}</script>
 </head>
 <body>
@@ -52,7 +53,7 @@
 <div id="nudgeHint" hidden><kbd>G</kbd> Nudge</div>
 <div id="echoMarker" hidden aria-hidden="true">Take 01 · You</div>
 <div id="rewindNotice" hidden><span>◀◀ &nbsp; REWIND</span><strong>Back to the toss</strong><small>Your first photographer will replay.</small></div>
-<div id="toast" role="status"></div><div id="flash"></div>
+<div id="toast" role="status"></div>
 <div class="lower">
 <div class="gear"><div class="gearTitle"><svg><use href="#camera"/></svg><span id="kitLabel">85 mm · Telephoto</span><span id="zoomControls" hidden><button id="zoomLess" aria-label="Zoom out">−</button><button id="zoomMore" aria-label="Zoom in">+</button></span></div>
 <div class="cameraSettings"><span id="formatLabel">Landscape</span><span id="stanceLabel">Standing</span></div>

@@ -1,4 +1,5 @@
 // Positional wedding music, rain and reception Foley · Judge Dean LLC
+import { createFieldFoley } from './field-foley.js';
 import { guitarLoop } from './guitar-score.js';
 
 const stems = {
@@ -24,106 +25,11 @@ function perspective(player, yaw, source, reach) {
   };
 }
 
-// Curtain travel and the sprung catch are separate contacts. The smaller wide
-// body has a shorter throw; the heavier telephoto body carries a lower knock.
-function shutterBuffer(audio, tele) {
-  const rate = audio.sampleRate, length = tele ? .123 : .084;
-  const buffer = audio.createBuffer(1, Math.ceil(rate * length), rate);
-  const wave = buffer.getChannelData(0);
-  const contacts = tele
-    ? [[0,.10,870,.0033],[.007,.35,251,.013],[.044,.27,360,.013],[.061,.12,790,.006]]
-    : [[0,.09,980,.0023],[.004,.26,430,.007],[.030,.18,580,.007],[.041,.08,1050,.004]];
-  let random = tele ? 35259 : 19795, low = 0, previous = 0;
-  for (let i = 0; i < wave.length; i++) {
-    const t = i / rate;
-    random = (Math.imul(random,1664525) + 1013904223) >>> 0;
-    const noise = random / 2147483648 - 1;
-    low += .27 * (noise - low);
-    const grit = low - previous * .62;
-    previous = low;
-    let v = 0;
-    for (const [onset,gain,hz,decay] of contacts) {
-      const age = t - onset;
-      if (age < 0) continue;
-      const phase = 2 * Math.PI * hz * age;
-      const body = Math.sin(phase) + .35 * Math.sin(phase * 2.49) + .14 * Math.sin(phase * 4.7);
-      const strike = 1 - Math.exp(-age / .00038);
-      v += gain * strike * (body * Math.exp(-age / decay) + grit * 3.8 * Math.exp(-age / (decay * .74)));
-    }
-    wave[i] = .67 * Math.tanh(v) * Math.min(1,(length-t)/.004);
-  }
-  return buffer;
-}
-
-function shoeBuffer(audio, inside, variant) {
-  const rate=audio.sampleRate, duration=inside ? .172 : .195;
-  const buffer=audio.createBuffer(1, Math.ceil(rate*duration), rate);
-  const samples=buffer.getChannelData(0);
-  let seed=947331 + 18137 * variant, grit=0, dust=0, weight=0;
-  const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
-  const sole=inside ? 124+variant*5 : 96+variant*4;
-  const toe=.057+variant*.004;
-  const grains=Array.from({length:7},(_,i)=>[.017+i*.014+random()*.011,.30+random()*.38]);
-  const slow=1-Math.exp(-2*Math.PI*290/rate), mid=1-Math.exp(-2*Math.PI*1310/rate);
-  const fast=1-Math.exp(-2*Math.PI*5700/rate);
-  for(let i=0;i<samples.length;i++){
-    const t=i/rate, noise=random()*2-1;
-    weight+=slow*(noise-weight); grit+=mid*(noise-grit); dust+=fast*(noise-dust);
-    const heel=(1-Math.exp(-t/.004))*Math.exp(-t/.031);
-    const roll=Math.max(0,t-toe), ball=(1-Math.exp(-roll/.008))*Math.exp(-roll/.034);
-    const phase=2*Math.PI*sole*t;
-    let sample=(.36*heel+.25*ball)*weight;
-    if(inside){
-      // The hollow board rings briefly at heel strike and again as the sole rolls flat.
-      sample+=heel*(.23*Math.sin(phase)+.13*Math.sin(phase*2.76));
-      sample+=ball*(.15*Math.sin(2*Math.PI*sole*roll)+.14*(grit-weight));
-    }else{
-      let crunch=0;
-      for(const [at,level] of grains){
-        const age=t-at;
-        if(age>=0)crunch+=level*(1-Math.exp(-age/.0018))*Math.exp(-age/.008);
-      }
-      sample+=heel*.10*Math.sin(phase)+(.22*heel+.17*ball)*(grit-weight)+crunch*.58*(dust-grit);
-    }
-    samples[i]=sample*Math.min(1,(duration-t)/.008);
-  }
-  return buffer;
-}
-
 export function createWeddingSound(audio) {
   const channels = new Map(), voices = new Map(), buffers = new Map();
   const loading = new Set(), retryAfter = new Map();
-  const cameraBodies = new Map(), shoes = new Map(), foleyVoices = new Set();
-  let stepNumber = 0;
+  const foley=createFieldFoley(audio);
   let previousTime = null, previousAudioTime = 0;
-
-  function playFoley(buffer, volume, balance, speed = 1) {
-    const source=audio.createBufferSource(), gain=audio.createGain(), pan=audio.createStereoPanner();
-    source.buffer=buffer; source.playbackRate.value=speed;
-    gain.gain.value=clamp(volume,0,1); pan.pan.value=clamp(balance,-1,1);
-    source.connect(pan).connect(gain).connect(audio.destination);
-    foleyVoices.add(source);
-    source.onended=()=>{
-      source.disconnect(); pan.disconnect(); gain.disconnect(); foleyVoices.delete(source);
-    };
-    source.start();
-  }
-
-  function shutter(kit, {volume=1,pan=0}={}) {
-    if (audio.state !== 'running' || volume <= .001) return;
-    const tele = kit === 'tele';
-    if (!cameraBodies.has(tele)) cameraBodies.set(tele, shutterBuffer(audio, tele));
-    playFoley(cameraBodies.get(tele),volume,pan);
-  }
-
-  function footstep({inside=false,crouched=false,sprint=false,side=1}={}) {
-    if(audio.state!=='running')return;
-    const variant=stepNumber++ % 3, key=variant+(inside?3:0);
-    if(!shoes.has(key))shoes.set(key,shoeBuffer(audio,inside,variant));
-    const level=crouched ? .15 : sprint ? .55 : .37;
-    const speed=(crouched ? .90 : sprint ? 1.11 : 1) + (variant-1)*.018;
-    playFoley(shoes.get(key),level,side<0?-.19:.19,speed);
-  }
 
   async function load(name) {
     if (buffers.has(name) || loading.has(name) || audio.currentTime < (retryAfter.get(name) || 0)) return;
@@ -226,8 +132,7 @@ export function createWeddingSound(audio) {
 
   function stop() {
     for (const name of voices.keys()) release(name);
-    for (const source of foleyVoices) source.stop();
-    foleyVoices.clear();
+    foley.stop();
     previousTime = null;
   }
 
@@ -267,7 +172,7 @@ export function createWeddingSound(audio) {
 
   // Load the two musical beds while the player settles into the opening frame.
   load('guitar'); load('ballroom');
-  return {update, stop, shutter, footstep};
+  return {update, stop, shutter:foley.shutter, footstep:foley.footstep};
 }
 
 export { perspective as soundPerspective };

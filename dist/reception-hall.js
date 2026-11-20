@@ -1,5 +1,6 @@
 // Judge Dean LLC
 import * as THREE from 'three';
+import { makeCandleGlows } from './estate-lighting.js';
 
 export function buildReceptionHall(scene, build) {
   const {box, rod, add, occlude, colliders, chair, receptionTable, urn, gardenSpray,
@@ -57,6 +58,8 @@ export function buildReceptionHall(scene, build) {
     return t;
   }
   // Floor is flush with the terrace. The dance floor is differentiated by its parquet and inlay.
+  build.footing('stone',CX,CZ,18,20,.07);
+  build.footing('wood',CX,CZ,8.7,10.7,.111);
   box(0xdacbb0,CX,.01,CZ,18,.12,20);
   for(let x=15.5;x<X1;x+=1.1)box(0xcbbb9d,x,.072,CZ,.011,.006,19.7);
   for(let z=-8;z<Z1;z+=1.1)box(0xcbbb9d,CX,.072,z,17.8,.006,.011);
@@ -165,6 +168,7 @@ export function buildReceptionHall(scene, build) {
     }
     box(oak,x,5.40,CZ,.13,1.89,.13);
   }
+  const flames=[];
   function chandelier(x,z){
     bendFrom(6.40, -.013, () => {
       rod(walnut,x,6.40,z,x,4.03,z,.023);
@@ -177,6 +181,7 @@ export function buildReceptionHall(scene, build) {
         rod(brass,x+dx*r,3.59,z+dz*r,x+Math.cos(n)*r,3.59,z+Math.sin(n)*r,.024);
         add('pot',brass,x+dx*r,3.60,z+dz*r,.09,.08,.09);
         add('rod',0xffefd0,x+dx*r,3.80,z+dz*r,.043,.36,.043);
+        flames.push([x+dx*r,4.005,z+dz*r,.35]);
         add('globe',0xffe3a1,x+dx*r,4.005,z+dz*r,.038,.076,.038,0,0,0,lightBulb);
         add('leaf',0xe5ddbf,x+dx*r,3.42,z+dz*r,.043,.13,.043);
       }
@@ -184,11 +189,18 @@ export function buildReceptionHall(scene, build) {
     });
   }
   for(const x of [19.25,24.35,29.48])chandelier(x,CZ);
-  // A small number of non-shadowing warm lights give the timber hall its own exposure.
-  for(const x of [20.6,28.0]){
-    const lamp=new THREE.PointLight(0xffd8a4,22,12,2);
-    lamp.position.set(x,3.65,CZ);scene.add(lamp);
-  }
+  // Each point approximates a group of bulbs. Offset the east group toward the
+  // center chandelier to spread the warm key across the cake's vertical tiers.
+  const lamps=[19.25,27.9].map(x=>{
+    const lamp=new THREE.PointLight(0xffc088,25,13,2);
+    lamp.position.set(x,3.70,CZ+.45);scene.add(lamp);return lamp;
+  });
+  // Sky coming through the open French doors gives dark suits and the edge
+  // of the ivory frosting a cool rim, while the chandeliers model the front.
+  const windowLight=new THREE.SpotLight(0xb7d4ff,17,13,1.08,.77,2);
+  windowLight.position.set(34.3,3.6,CZ+.85);
+  windowLight.target.position.set(27,1.3,CZ-.28);
+  scene.add(windowLight,windowLight.target);
   // Silk canopies dip between the ceiling joists and frame the doors to the terrace.
   const silk=new THREE.MeshStandardMaterial({side:THREE.DoubleSide,vertexColors:true,roughness:.87});
   function drape(a,b,dip,depth,color,hem){
@@ -264,6 +276,7 @@ export function buildReceptionHall(scene, build) {
     for(const [px,pz,h] of positions){
       add('pot',brassGold,px,Y(h),pz,.059*scale,.066*scale,.059*scale);
       add('rod',0xffeaca,px,Y(h+.16),pz,.022*scale,.27*scale,.022*scale);
+      flames.push([px,Y(h+.331),pz,.35*scale]);
       add('leaf',0xffcf80,px,Y(h+.331),pz,.025*scale,.061*scale,.025*scale,0,0,-.12,lightBulb);
     }
   }
@@ -334,6 +347,7 @@ export function buildReceptionHall(scene, build) {
   // beyond the original courtyard without scaling the guests or furniture.
   build.exterior();
   // An open-air supper terrace can be reached through the ballroom's French doors.
+  build.footing('stone',37.27,CZ,8.70,9.10,.062);
   box(0xbcb19b,37.27,.023,CZ,8.70,.078,9.10);
   for(const pz of [-1.92,4.92]){
     const px=36.53;
@@ -403,5 +417,12 @@ export function buildReceptionHall(scene, build) {
     return barriers.some(b=>Math.abs(x-b.x)<=b.hw+radius&&Math.abs(z-b.z)<=b.hd+radius);
   }
   barriers.push({x:0,z:-11.7,hw:15,hd:.20});
-  return {blocks};
+  const glow=makeCandleGlows(scene,flames);
+  function light(dusk,rain){
+    lamps[0].intensity=18+12*dusk+2.6*rain;
+    lamps[1].intensity=26+16*dusk+3.5*rain;
+    windowLight.intensity=18+19*rain-5*dusk;
+    glow.value=.63+.64*dusk+.11*rain;
+  }
+  return {blocks,light};
 }
